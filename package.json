@@ -1,0 +1,19 @@
+{
+  "name": "cs361_microservice_a",
+  "version": "1.0.0",
+  "description": "This microservice provides total work hours for assignments via a simple REST API. It allows consumers to request total hours by assignment ID and filter hours within a specific date range.",
+  "type": "module",
+  "main": "Microservice_A.js",
+  "scripts": {
+    "start": "node Microservice_A.js",
+    "test": "node test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "node-fetch": "^3.3.2"
+  }
+}
