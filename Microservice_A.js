@@ -1,6 +1,8 @@
 // Grabbing necessary imports 
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
 
 // Setting port and express
 const app = express();
@@ -64,9 +66,61 @@ app.get('/hours/:assignmentId/range', (req, res) => {
     res.json({ totalHours });
 });
 
+// Helper to parse single-quoted JSON-like list
+const parseLine = (line) => {
+    try {
+        return JSON.parse(line.replace(/'/g, '"'));
+    } catch {
+        return null;
+    }
+};
+
+// New Endpoint: Process assignment data from text file
+app.get('/process-assignments', (req, res) => {
+    const inputFile = path.join('.', 'assignments.txt');
+    const outputFile = path.join('.', 'results.txt');
+
+    fs.readFile(inputFile, 'utf8', (err, data) => {
+        if (err) {
+            console.error('[Microservice] Error reading assignments.txt:', err);
+            return res.status(500).json({ error: 'File read error' });
+        }
+
+        const lines = data.trim().split('\n');
+        let totalHours = 0;
+        let nullCount = 0;
+
+        for (const line of lines) {
+            const entry = parseLine(line);
+            if (!entry || entry.length < 5) continue;
+
+            const hoursStr = entry[3].trim();
+            const hours = parseFloat(hoursStr);
+
+            if (!hoursStr || isNaN(hours) || hours === 0) {
+                nullCount++;
+            } else {
+                totalHours += hours;
+            }
+        }
+
+        const outputText = `Total Hours: ${totalHours}\nNull or Zero Hour Entries: ${nullCount}\n`;
+
+        fs.writeFile(outputFile, outputText, 'utf8', (writeErr) => {
+            if (writeErr) {
+                console.error('[Microservice] Error writing results.txt:', writeErr);
+                return res.status(500).json({ error: 'File write error' });
+            }
+
+            console.log('[Microservice] Results saved to results.txt');
+            res.json({ message: 'Assignment data processed', totalHours, nullCount });
+        });
+    });
+});
+
 // For browser visibility 
 app.get('/', (req, res) => {
-    res.send('Microservice is running. Use /hours/:assignmentId or /hours/:assignmentId/range.');
+    res.send('Microservice is running. Use /hours/:assignmentId, /hours/:assignmentId/range, or /process-assignments.');
 });
 
 // Starting the service 
